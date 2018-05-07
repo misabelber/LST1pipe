@@ -8,6 +8,7 @@ import matplotlib.pylab as plt
 import astropy.units as u
 import numpy as np
 import ctapipe
+import os
 from ctapipe.core import Container, Field, Map
 from ctapipe.instrument import CameraGeometry
 from ctapipe.visualization import CameraDisplay
@@ -16,6 +17,7 @@ from ctapipe.io.eventsourcefactory import EventSourceFactory
 from ctapipe.image.charge_extractors import LocalPeakIntegrator
 from astropy.visualization import quantity_support
 from astropy.table import Table
+from astropy.io import fits
 import copy
 
 class EventContainer(Container):
@@ -24,7 +26,7 @@ class EventContainer(Container):
 
 if __name__ == '__main__':
 
-        level1 = {'LSTCam' : 6.}
+    level1 = {'LSTCam' : 6.}
     level2 = level1.copy()
     # We use as second cleaning level just half of the first cleaning level
     for key in level2:
@@ -51,7 +53,8 @@ if __name__ == '__main__':
     mcCore_y = np.array([])
     mcHfirst = np.array([])
     mcType = np.array([])
-    
+
+    fitsdata = np.array([])
 
     log10pixelHGsignal = {}
     survived = {}
@@ -84,10 +87,10 @@ if __name__ == '__main__':
 
         ntels = len(event.r0.tels_with_data)
 
-
-        # if i > 100:   # for quick tests
-        #    break
-
+        '''
+        if i > 100:   # for quick tests
+            break
+        '''
         for ii, tel_id in enumerate(event.r0.tels_with_data):
             
             geom = event.inst.subarray.tel[tel_id].camera
@@ -97,18 +100,6 @@ if __name__ == '__main__':
             elif str(geom) == 'ASTRI':   # excluded because no proper simulation in Prod3
                 continue
             
-            #Store parameters from event and MC:
-            ObsID = np.append(ObsID,event.r0.obs_id)
-            EvID = np.append(ObsID,event.r0.event_id)
-            
-            mcEnergy = np.append(mcEnergy,event.mc.energy)
-            mcAlt = np.append(mcAlt,event.mc.alt)
-            mcAz = np.append(mcAz,event.mc.az)
-            mcCore_x = np.append(mcCore_x,event.mc.core_x)
-            mcCore_y = np.append(mcCore_y,event.mc.core_y)
-            mcHfirst = np.append(mcHfirst,event.mc.h_first_int)
-            mcTyple = np.append(mcType,event.mc.shower_primary_id)
-
             data = event.r0.tel[tel_id].waveform
             ped = event.mc.tel[tel_id].pedestal
             # the pedestal is the average (for pedestal events) of the *sum* of all samples, from sim_telarray
@@ -151,13 +142,63 @@ if __name__ == '__main__':
             width = np.append(width, w.value)
             length = np.append(length, l.value)
             size = np.append(size, hillas.size)
+
+
+            #Store parameters from event and MC:
+            ObsID = np.append(ObsID,event.r0.obs_id)
+            EvID = np.append(EvID,event.r0.event_id)
+            
+            mcEnergy = np.append(mcEnergy,event.mc.energy)
+            mcAlt = np.append(mcAlt,event.mc.alt)
+            mcAz = np.append(mcAz,event.mc.az)
+            mcCore_x = np.append(mcCore_x,event.mc.core_x)
+            mcCore_y = np.append(mcCore_y,event.mc.core_y)
+            mcHfirst = np.append(mcHfirst,event.mc.h_first_int)
+            mcType = np.append(mcType,event.mc.shower_primary_id)
             
 
-    data = {'camtype':camtype,'ObsID':ObsID,'EvID':EvID,'mcEnergy':mcEnergy,'mcAlt':mcAlt,'mcAz':mcAz, 'width':width, 'length':length, 'size':size}
-    ntuple = Table(data)
-    ntuple.write("out.fits", overwrite=True)
+    #print(np.shape(camtype),np.shape(ObsID),np.shape(EvID),np.shape(mcEnergy),np.shape(mcAlt),np.shape(mcAz),np.shape(mcCore_x),np.shape(mcCore_y),np.shape(mcHfirst),np.shape(mcType),np.shape(width),np.shape(length),np.shape(size))
 
+    output = {'camtype':camtype,'ObsID':ObsID,'EvID':EvID,'mcEnergy':mcEnergy,'mcAlt':mcAlt,'mcAz':mcAz, 'mcCore_x':mcCore_x,'mcCore_y':mcCore_y,'mcHfirst':mcHfirst,'mcType':mcType, 'width':width, 'length':length, 'size':size}
+    ntuple = Table(output)
+
+    if os.path.isfile('events.txt'):
+        with open('events.txt',mode='a') as f:
+            f.seek(0,os.SEEK_END)
+            ntuple.write(f,format='ascii.no_header')
+
+    else:
+        ntuple.write('events.txt',format='ascii')
+
+        
+    table = Table.read('events.txt',format='ascii')
+    table.write('events.fits',overwrite=True)
+
+    '''
+    hdu = fits.BinTableHDU.from_columns(
+        [fits.Column(name='camtype',format = '20A', array=camtype),
+        fits.Column(name='ObsID',format='E',array=ObsID),
+        fits.Column(name='EvID',format='E',array=EvID),
+        fits.Column(name='mcEnergy',format='E',array=mcEnergy),
+        fits.Column(name='mcAlt',format='E',array=mcAlt),
+        fits.Column(name='mcAz',format='E',array=mcAz),
+        fits.Column(name='mcCore_x',format='E',array=mcCore_x),
+        fits.Column(name='mcCore_y',format='E',array=mcCore_y),
+        fits.Column(name='mcHfirst',format='E',array=mcHfirst),
+        fits.Column(name='mcType',format='E',array=mcType),
+        fits.Column(name='width',format='E',array=width),
+        fits.Column(name='length',format='E',array=length),
+        fits.Column(name='size',format='E',array=size)])
+
+    hdu.writeto("out.fits",overwrite=True)
+    ntuple.write("out.fits",format='fits',overwrite=True)
     
+    fitsfile = 'out.fits'
+    hdul = fits.open(fitsfile)
+    hdr = hdul[1].header
+    hdu.append(hdu)
+    hdu.writeto("new.fits",overwrite=True)
+    '''
     '''
     for key in level1:
         if level1[key] > 0:
