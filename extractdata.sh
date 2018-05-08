@@ -1,7 +1,10 @@
 #! /bin/bash
 
 HERE=`pwd`
-DATA_PATH='/scratch/bernardos/LST1/Gamma/'
+
+PARTICLE='Gamma'
+
+DATA_PATH='/scratch/bernardos/LST1/'$PARTICLE
 
 cd $DATA_PATH
 files=(`ls`)
@@ -10,5 +13,5 @@ cd $HERE
 
 for i in "${files[@]}"
 do
-    python LST1_Hillas.py Gamma $i
+    python LST1_Hillas.py $PARTICLE $i
 done
