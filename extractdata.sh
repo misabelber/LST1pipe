@@ -7,7 +7,7 @@ PARTICLE='Gamma'
 DATA_PATH='/scratch/bernardos/LST1/'$PARTICLE
 
 cd $DATA_PATH
-files=(`ls`)
+files=(`ls *.gz`)
 
 cd $HERE
 
@@ -15,3 +15,5 @@ for i in "${files[@]}"
 do
     python LST1_Hillas.py $PARTICLE $i
 done
+
+rm events.txt

@@ -46,6 +46,11 @@ if __name__ == '__main__':
     camtype = []   # one entry per image
     width = np.array([])
     length = np.array([])
+    phi = np.array([])
+    psi = np.array([])
+    r = np.array([])
+    cen_x = np.array([])
+    cen_y = np.array([])
     size = np.array([])
     
     #Event Parameters
@@ -60,6 +65,8 @@ if __name__ == '__main__':
     mcCore_y = np.array([])
     mcHfirst = np.array([])
     mcType = np.array([])
+    mcThetatel = np.array([])
+    mcPhitel = np.array([])
     GPStime = np.array([])
 
     fitsdata = np.array([])
@@ -95,10 +102,10 @@ if __name__ == '__main__':
 
         ntels = len(event.r0.tels_with_data)
 
-        '''
+
         if i > 100:   # for quick tests
             break
-        '''
+
         for ii, tel_id in enumerate(event.r0.tels_with_data):
             
             geom = event.inst.subarray.tel[tel_id].camera
@@ -146,28 +153,38 @@ if __name__ == '__main__':
             w = np.rad2deg(np.arctan2(hillas.width,foclen));
             l = np.rad2deg(np.arctan2(hillas.length,foclen));
 
-            camtype.append(str(geom))
-            width = np.append(width, w.value)
-            length = np.append(length, l.value)
-            size = np.append(size, hillas.size)
-
-
-            #Store parameters from event and MC:
-            ObsID = np.append(ObsID,event.r0.obs_id)
-            EvID = np.append(EvID,event.r0.event_id)
+            if w >= 0:
             
-            mcEnergy = np.append(mcEnergy,event.mc.energy)
-            mcAlt = np.append(mcAlt,event.mc.alt)
-            mcAz = np.append(mcAz,event.mc.az)
-            mcCore_x = np.append(mcCore_x,event.mc.core_x)
-            mcCore_y = np.append(mcCore_y,event.mc.core_y)
-            mcHfirst = np.append(mcHfirst,event.mc.h_first_int)
-            mcType = np.append(mcType,event.mc.shower_primary_id)
-            GPStime = np.append(GPStime,event.trig.gps_time.value)
+                camtype.append(str(geom))
+                width = np.append(width, w.value)
+                length = np.append(length, l.value)
+                phi = np.append(phi, hillas.phi)
+                psi = np.append(psi, hillas.plssi)
+                r = np.append(r,hillas.r)
+                cen_x = np.append(cen_x,hillas.cen_x)
+                cen_y = np.append(cen_y,hillas.cen_y)
+                size = np.append(size, hillas.size)
+                
+
+                #Store parameters from event and MC:
+                ObsID = np.append(ObsID,event.r0.obs_id)
+                EvID = np.append(EvID,event.r0.event_id)
+            
+                mcEnergy = np.append(mcEnergy,event.mc.energy)
+                mcAlt = np.append(mcAlt,event.mc.alt)
+                mcAz = np.append(mcAz,event.mc.az)
+                mcCore_x = np.append(mcCore_x,event.mc.core_x)
+                mcCore_y = np.append(mcCore_y,event.mc.core_y)
+                mcHfirst = np.append(mcHfirst,event.mc.h_first_int)
+                mcType = np.append(mcType,event.mc.shower_primary_id)
+                mcThetatel = np.append(mcThetatel,event.mcheader.run_array_direction[0])
+                mcPhitel = np.append(mcPhitel,event.mcheader.run_array_direction[1])
+                
+                GPStime = np.append(GPStime,event.trig.gps_time.value)
 
     #print(np.shape(camtype),np.shape(ObsID),np.shape(EvID),np.shape(mcEnergy),np.shape(mcAlt),np.shape(mcAz),np.shape(mcCore_x),np.shape(mcCore_y),np.shape(mcHfirst),np.shape(mcType),np.shape(width),np.shape(length),np.shape(size))
 
-    output = {'camtype':camtype,'ObsID':ObsID,'EvID':EvID,'mcEnergy':mcEnergy,'mcAlt':mcAlt,'mcAz':mcAz, 'mcCore_x':mcCore_x,'mcCore_y':mcCore_y,'mcHfirst':mcHfirst,'mcType':mcType, 'GPStime':GPStime, 'width':width, 'length':length, 'size':size}
+    output = {'camtype':camtype,'ObsID':ObsID,'EvID':EvID,'mcEnergy':mcEnergy,'mcAlt':mcAlt,'mcAz':mcAz, 'mcCore_x':mcCore_x,'mcCore_y':mcCore_y,'mcHfirst':mcHfirst,'mcType':mcType, 'GPStime':GPStime, 'width':width, 'length':length, 'phi':phi,'psi':psi,'r':r,'cen_x':cen_x,'cen_y':cen_y,'size':size,'mcThetatel':mcThetatel,'mcPhitel':mcPhitel}
     ntuple = Table(output)
 
     if os.path.isfile('events.txt'):
