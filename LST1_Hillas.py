@@ -159,7 +159,7 @@ if __name__ == '__main__':
                 width = np.append(width, w.value)
                 length = np.append(length, l.value)
                 phi = np.append(phi, hillas.phi)
-                psi = np.append(psi, hillas.plssi)
+                psi = np.append(psi, hillas.psi)
                 r = np.append(r,hillas.r)
                 cen_x = np.append(cen_x,hillas.cen_x)
                 cen_y = np.append(cen_y,hillas.cen_y)
