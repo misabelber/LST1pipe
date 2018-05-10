@@ -74,6 +74,8 @@ if __name__ == '__main__':
     log10pixelHGsignal = {}
     survived = {}
 
+    
+
     ev = EventContainer()
 
     n=0;
@@ -154,7 +156,11 @@ if __name__ == '__main__':
             l = np.rad2deg(np.arctan2(hillas.length,foclen));
 
             if w >= 0:
-            
+                if fitsdata.size == 0:
+                    fitsdata = clean
+                else:
+                    fitsdata = np.vstack([fitsdata,clean])
+
                 camtype.append(str(geom))
                 width = np.append(width, w.value)
                 length = np.append(length, l.value)
@@ -199,3 +205,18 @@ if __name__ == '__main__':
     table = Table.read('events.txt',format='ascii')
     table.write('events.fits',overwrite=True)
 
+    CamGeom = geom.to_table()
+
+    hdul=fits.open("events.fits")
+    hdu = fits.ImageHDU(fitsdata)
+    
+    data = CamGeom.as_array()
+    header = fits.Header()
+    header.update(CamGeom.meta)
+    
+    hdul.append(hdu)
+    hdul.append(fits.BinTableHDU(data=data,header=header))
+    hdul.writeto("events.fits",overwrite=True)
+    
+    
+    
