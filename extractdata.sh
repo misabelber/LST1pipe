@@ -16,4 +16,4 @@ do
     python LST1_Hillas.py $PARTICLE $i
 done
 
-rm events.txt
+

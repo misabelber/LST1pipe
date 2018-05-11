@@ -18,7 +18,7 @@ from ctapipe.image import hillas_parameters, hillas_parameters_2, tailcuts_clean
 from ctapipe.io.eventsourcefactory import EventSourceFactory
 from ctapipe.image.charge_extractors import LocalPeakIntegrator
 from astropy.visualization import quantity_support
-from astropy.table import Table
+from astropy.table import vstack,Table
 from astropy.io import fits
 
 
@@ -192,31 +192,59 @@ if __name__ == '__main__':
 
     output = {'camtype':camtype,'ObsID':ObsID,'EvID':EvID,'mcEnergy':mcEnergy,'mcAlt':mcAlt,'mcAz':mcAz, 'mcCore_x':mcCore_x,'mcCore_y':mcCore_y,'mcHfirst':mcHfirst,'mcType':mcType, 'GPStime':GPStime, 'width':width, 'length':length, 'phi':phi,'psi':psi,'r':r,'cen_x':cen_x,'cen_y':cen_y,'size':size,'mcThetatel':mcThetatel,'mcPhitel':mcPhitel}
     ntuple = Table(output)
-
-    if os.path.isfile('events.txt'):
-        with open('events.txt',mode='a') as f:
-            f.seek(0,os.SEEK_END)
-            ntuple.write(f,format='ascii.no_header')
-
-    else:
-        ntuple.write('events.txt',format='ascii')
-
+    
+    if os.path.isfile('events.fits')==False :
+        #Convert Tables of data into HDUBinTables to write them into fits files
+        CamGeom = geom.to_table() #Table containing camera geometry information
+        geomdata = CamGeom.as_array()
+        geomheader = fits.Header()
+        geomheader.update(CamGeom.meta)
         
-    table = Table.read('events.txt',format='ascii')
-    table.write('events.fits',overwrite=True)
+        pardata = ntuple.as_array()
+        parheader = fits.Header()
+        parheader.update(ntuple.meta)
+        
+        pixels = fits.ImageHDU(fitsdata)
 
-    CamGeom = geom.to_table()
+        #Write the data in an HDUList for storing in a fitsfile
+        hdr = fits.Header() #Example header, we can add more things to this header
+        hdr['TEL'] = 'LST1'
+        primary_hdu = fits.PrimaryHDU(header=hdr)
+        hdul = fits.HDUList([primary_hdu])
+        hdul.append(fits.BinTableHDU(data=pardata,header=parheader))
+        hdul.append(pixels)
+        hdul.append(fits.BinTableHDU(data=geomdata,header=geomheader))
+        hdul.writeto("events.fits")
+    else:
+        #Iºf this is not the first data set, we must append the new data to the existing HDUBinTables and ImageHDU contained in the events.fits file.
+        hdul=fits.open("events.fits") #Open the existing file which contains two tables and 1 image
+        #Get the already existing data:
+        primary_hdu = hdul[0]
+        geomdata = hdul[3]
+        data = Table.read("events.fits",1)
+        pixdata = hdul[2].data
+        
+        #Concatenate data
+        data = vstack([data,ntuple])
+        pixdata = np.vstack([pixdata,fitsdata])
 
-    hdul=fits.open("events.fits")
-    hdu = fits.ImageHDU(fitsdata)
-    
-    data = CamGeom.as_array()
-    header = fits.Header()
-    header.update(CamGeom.meta)
-    
-    hdul.append(hdu)
-    hdul.append(fits.BinTableHDU(data=data,header=header))
-    hdul.writeto("events.fits",overwrite=True)
-    
+        #Convert into HDU objects
+        pardata = data.as_array()
+        parheader = fits.Header()
+        parheader.update(data.meta)
+        pixhdu = fits.ImageHDU(pixdata)
+
+        #Write the data in an HDUList for storing in a fitsfile
+        
+        hdul = fits.HDUList([primary_hdu])
+        hdul.append(fits.BinTableHDU(data=pardata,header=parheader))
+        hdul.append(pixhdu)
+        hdul.append(geomdata)
+
+        hdul.writeto("events.fits",overwrite=True)
+                
+        
+
+
     
     
