@@ -195,11 +195,8 @@ if __name__ == '__main__':
     
     if os.path.isfile('events.fits')==False :
         #Convert Tables of data into HDUBinTables to write them into fits files
-        CamGeom = geom.to_table() #Table containing camera geometry information
-        geomdata = CamGeom.as_array()
-        geomheader = fits.Header()
-        geomheader.update(CamGeom.meta)
         
+                
         pardata = ntuple.as_array()
         parheader = fits.Header()
         parheader.update(ntuple.meta)
@@ -213,14 +210,12 @@ if __name__ == '__main__':
         hdul = fits.HDUList([primary_hdu])
         hdul.append(fits.BinTableHDU(data=pardata,header=parheader))
         hdul.append(pixels)
-        hdul.append(fits.BinTableHDU(data=geomdata,header=geomheader))
         hdul.writeto("events.fits")
     else:
         #Iºf this is not the first data set, we must append the new data to the existing HDUBinTables and ImageHDU contained in the events.fits file.
         hdul=fits.open("events.fits") #Open the existing file which contains two tables and 1 image
         #Get the already existing data:
         primary_hdu = hdul[0]
-        geomdata = hdul[3]
         data = Table.read("events.fits",1)
         pixdata = hdul[2].data
         
@@ -239,8 +234,7 @@ if __name__ == '__main__':
         hdul = fits.HDUList([primary_hdu])
         hdul.append(fits.BinTableHDU(data=pardata,header=parheader))
         hdul.append(pixhdu)
-        hdul.append(geomdata)
-
+        
         hdul.writeto("events.fits",overwrite=True)
                 
         

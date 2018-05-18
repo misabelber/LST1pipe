@@ -17,10 +17,14 @@ geom = CameraGeometry.from_name("LSTCam") #Camera geometry
 nevents = hdu_list[1].data.field(0).size #Total number of events
 disp = np.array([]) #Disp quantity
 
+width = hdu_list[1].data.field(11)
+length = hdu_list[1].data.field(12)
+size = hdu_list[1].data.field(18)
+energy = hdu_list[1].data.field(3)
 for i in range(0,nevents):
     size = hdu_list[1].data.field(18)[i]
-    if size < 150:
-        continue
+    #if size < 150:
+    #    continue
 
     #Calculate source position    
     mcAlt = hdu_list[1].data.field(4)[i] 
@@ -86,7 +90,7 @@ for i in range(0,nevents):
 
     disp = np.append(disp,m.sqrt((Source_X-cen_x)**2+(Source_Y-cen_y)**2))
 
-
+    '''
     display = CameraDisplay(geom)
     display.add_colorbar()
     
@@ -101,7 +105,7 @@ for i in range(0,nevents):
     plt.plot([Source_X,cen_x],[Source_Y,cen_y],'-',color="red")
     print(size,mcAlttel,mcAztel,mcAlt,mcAz)
     plt.show()
-
-plt.plot(disp,hdu_list[1].data.field(11)/hdu_list[1].data.field(12),'.')
-plt.yscale('log')
+    '''
+plt.plot(width/length,disp,'.')
+#plt.yscale('log')
 plt.show()  
