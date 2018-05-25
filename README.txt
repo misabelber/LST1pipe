@@ -22,3 +22,5 @@ Change "DATA_PATH" in the script "stractdata.sh"
 
 "extractdata.sh"
 	Allows running "LST_Hillas.py" over all files contained in a certain folder. 	
+"calcdisp"
+	Script to calculate source position in camera coordinates and disp quantity.
