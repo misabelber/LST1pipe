@@ -6,6 +6,10 @@ from ctapipe.instrument import CameraGeometry,OpticsDescription
 from ctapipe.visualization import CameraDisplay
 import astropy.units as u
 import ctapipe.coordinates as c
+from scipy.optimize import minimize, newton
+
+def function(pars):
+    return sum((disp - (pars[0]+pars[1]*(width/length)+pars[2]*size))**2)
 
 hdu_list = fits.open("events.fits") #File with events
 hdu_list[1].data
@@ -17,14 +21,22 @@ geom = CameraGeometry.from_name("LSTCam") #Camera geometry
 nevents = hdu_list[1].data.field(0).size #Total number of events
 disp = np.array([]) #Disp quantity
 
-width = hdu_list[1].data.field(11)
-length = hdu_list[1].data.field(12)
-size = hdu_list[1].data.field(18)
-energy = hdu_list[1].data.field(3)
+width = np.array([])
+length = np.array([])
+size = np.array([])
+energy = np.array([])
+ntrain=0;
 for i in range(0,nevents):
-    size = hdu_list[1].data.field(18)[i]
-    #if size < 150:
-    #    continue
+    if i%2==0:
+        continue
+    ntrain=ntrain+1
+    this_size = hdu_list[1].data.field(18)[i]
+    if this_size < 180:
+        continue
+    width = np.append(width,hdu_list[1].data.field(11)[i])
+    length = np.append(length,hdu_list[1].data.field(12)[i])
+    size = np.append(size,hdu_list[1].data.field(18)[i])
+    energy = np.append(energy,hdu_list[1].data.field(3)[i])
 
     #Calculate source position    
     mcAlt = hdu_list[1].data.field(4)[i] 
@@ -88,9 +100,11 @@ for i in range(0,nevents):
     cen_x = hdu_list[1].data.field(16)[i]
     cen_y = hdu_list[1].data.field(17)[i]
 
+    phi = hdu_list[1].data.field(13)[i]
+
     disp = np.append(disp,m.sqrt((Source_X-cen_x)**2+(Source_Y-cen_y)**2))
 
-    '''
+    
     display = CameraDisplay(geom)
     display.add_colorbar()
     
@@ -105,7 +119,110 @@ for i in range(0,nevents):
     plt.plot([Source_X,cen_x],[Source_Y,cen_y],'-',color="red")
     print(size,mcAlttel,mcAztel,mcAlt,mcAz)
     plt.show()
-    '''
-plt.plot(width/length,disp,'.')
+    
+#plt.plot(width/length,disp,'.')
 #plt.yscale('log')
-plt.show()  
+#plt.show()  
+
+
+
+print(ntrain)
+ 
+pars = [0,1,1]
+
+result = minimize(function,pars,method='nelder-mead')
+print(function(result.x))
+
+print(result.x[0],result.x[1],result.x[2])
+
+disp_ = np.array([]) #Disp quantity
+estimate = np.array([])
+
+width_ = np.array([])
+length_ = np.array([])
+size_ = np.array([])
+energy_ = np.array([])
+ntest=0;
+
+
+for i in range(0,nevents):
+    if i%2!=0:
+        continue
+    ntest=ntest+1
+    this_size_ = hdu_list[1].data.field(18)[i]
+    if this_size_ < 180:
+        continue
+    width_ = np.append(width,hdu_list[1].data.field(11)[i])
+    length_ = np.append(length,hdu_list[1].data.field(12)[i])
+    size_ = np.append(size,hdu_list[1].data.field(18)[i])
+    energy_ = np.append(energy,hdu_list[1].data.field(3)[i])
+
+    #Calculate source position    
+    mcAlt = hdu_list[1].data.field(4)[i] 
+    mcAz = hdu_list[1].data.field(5)[i]
+    mcAlttel = hdu_list[1].data.field(19)[i]
+    mcAztel = hdu_list[1].data.field(20)[i]
+    
+    mcAlt = c.alt_to_theta(mcAlt*u.rad).value
+    mcAz = c.az_to_phi(mcAz*u.rad).value
+    mcAlttel = c.alt_to_theta(mcAlttel*u.rad).value
+    mcAztel = c.az_to_phi(mcAztel*u.rad).value
+
+    #Sines and cosines of direction angles
+    cp = np.cos(mcAz)
+    sp = np.sin(mcAz)
+    ct = np.cos(mcAlt)
+    st = np.sin(mcAlt)
+
+
+    #Shower direction coordinates
+
+    source = np.zeros(3)
+    source[0] = st*cp
+    source[1] = st*sp
+    source[2] = ct
+    
+    
+
+    #Rotation matrices towars the camera frame
+    rot_Y = np.matrix([np.zeros(3),np.zeros(3),np.zeros(3)])
+    rot_Z = np.matrix([np.zeros(3),np.zeros(3),np.zeros(3)])
+ 
+
+    rot_Y[0,0] = np.cos(mcAlttel)
+    rot_Y[0,1] = 0
+    rot_Y[0,2] = np.sin(mcAlttel) 
+    rot_Y[1,0] = 0
+    rot_Y[1,1] = 1
+    rot_Y[1,2] = 0
+    rot_Y[2,0] = -np.sin(mcAlttel)
+    rot_Y[2,1] = 0
+    rot_Y[2,2] = np.cos(mcAlttel)
+    
+    rot_Z[0,0] = np.cos(mcAztel) 
+    rot_Z[0,1] = -np.sin(mcAztel)
+    rot_Z[0,2] = 0
+    rot_Z[1,0] = np.sin(mcAztel)
+    rot_Z[1,1] = np.cos(mcAztel)
+    rot_Z[1,2] = 0
+    rot_Z[2,0] = 0
+    rot_Z[2,1] = 0
+    rot_Z[2,2] = 1
+
+    tmp = np.dot(rot_Y,source)
+    tmp=tmp.getT()
+    res = np.squeeze(np.asarray(np.dot(rot_Z,tmp)))
+
+    Source_X = -focal_length*res[0]/res[2]
+    Source_Y = -focal_length*res[1]/res[2]
+    
+    cen_x = hdu_list[1].data.field(16)[i]
+    cen_y = hdu_list[1].data.field(17)[i]
+
+    disp_ = np.append(disp,m.sqrt((Source_X-cen_x)**2+(Source_Y-cen_y)**2))
+    
+estimate = result.x[0]+result.x[1]*width_/length_+result.x[2]*size_
+
+
+
+    

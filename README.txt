@@ -21,5 +21,4 @@ Change "DATA_PATH" in the script "stractdata.sh"
 	them in a fits and ascii file, losing pixel information. 
 
 "extractdata.sh"
-	Allows running "LST_Hillas.py" over all files contained in a certain folder. 
-	
+	Allows running "LST_Hillas.py" over all files contained in a certain folder. 	
