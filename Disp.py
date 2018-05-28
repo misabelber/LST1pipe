@@ -13,55 +13,38 @@ def calc_CamSourcePos(mcAlt,mcAz,mcAlttel,mcAztel,focal_length):
     sp = np.sin(mcAz)
     ct = np.cos(mcAlt)
     st = np.sin(mcAlt)
-
-    #Shower direction coordinates
+    
+     #Shower direction coordinates
 
     sourcex = st*cp
     sourcey = st*sp
     sourcez = ct
 
+    #print(sourcex)
+
     source = np.array([sourcex,sourcey,sourcez])
+    source=source.T
     
-    
-
     #Rotation matrices towars the camera frame
-    rot_Y = np.matrix([np.zeros(3),np.zeros(3),np.zeros(3)])
-    rot_Z = np.matrix([np.zeros(3),np.zeros(3),np.zeros(3)])
     
-    rot_Y = np.array([[np.cos(mcAlttel),0,np.sin(mcAlttel)],
-                      [0,1,0],
-                      [-np.sin(mcAlttel),0,np.cos(mcAlttel)]])
-
-    rot_Z = np.array([[np.cos(mcAztel),-np.sin(mcAztel),0],
-                      [np.sin(mcAztel),np.cos(mcAztel),0],
-                      [0,0,1]])
-
-    '''
-    rot_Y[0,0] = np.cos(mcAlttel)
-    rot_Y[0,1] = 0
-    rot_Y[0,2] = np.sin(mcAlttel) 
-    rot_Y[1,0] = 0
-    rot_Y[1,1] = 1
-    rot_Y[1,2] = 0
-    rot_Y[2,0] = -np.sin(mcAlttel)
-    rot_Y[2,1] = 0
-    rot_Y[2,2] = np.cos(mcAlttel)
+    rot_Matrix = np.empty((0,3,3))
+    for (alttel,aztel) in zip(mcAlttel,mcAztel):
+        
+        mat_Y = np.array([[np.cos(alttel),0,np.sin(alttel)],
+                        [0,1,0], 
+                        [-np.sin(alttel),0,np.cos(alttel)]]).T
+        
+        
+        mat_Z = np.array([[np.cos(aztel),-np.sin(aztel),0],
+                        [np.sin(aztel),np.cos(aztel),0],
+                        [0,0,1]]).T
     
-    rot_Z[0,0] = np.cos(mcAztel) 
-    rot_Z[0,1] = -np.sin(mcAztel)
-    rot_Z[0,2] = 0
-    rot_Z[1,0] = np.sin(mcAztel)
-    rot_Z[1,1] = np.cos(mcAztel)
-    rot_Z[1,2] = 0
-    rot_Z[2,0] = 0
-    rot_Z[2,1] = 0
-    rot_Z[2,2] = 1
-    '''
-
-    tmp = np.dot(rot_Y,source)
-    tmp=tmp.getT()
-    res = np.squeeze(np.asarray(np.dot(rot_Z,tmp)))
-
+        
+        rot_Matrix = np.append(rot_Matrix,[np.matmul(mat_Y,mat_Z)],axis=0)
+    
+    res = np.einsum("...ij,...i",rot_Matrix,source)
+    res = res.T
+    
     Source_X = -focal_length*res[0]/res[2]
     Source_Y = -focal_length*res[1]/res[2]
     return Source_X, Source_Y

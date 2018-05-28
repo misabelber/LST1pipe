@@ -59,7 +59,7 @@ print(difE.mean(),difE.std()*difE.std())
 
 figE, ax = plt.subplots()
 hE = ax.hist2d(E_test,erec,bins=50)
-plt.colorbar(h[3],ax=ax)
+plt.colorbar(hE[3],ax=ax)
 figE.show()
 
 X_disp = np.array([width/length,size,phi]).T
@@ -75,7 +75,7 @@ print(difD.mean(),difD.std()*difD.std())
 
 figD, aax = plt.subplots()
 hD = aax.hist2d(Disp_test,Disprec,bins=50)
-plt.colorbar(h[3],ax=aax)
+plt.colorbar(hD[3],ax=aax)
 figD.show()
 
 

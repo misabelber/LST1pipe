@@ -46,7 +46,7 @@ for i in range(0,nevents):
     mcAlttel = hdu_list[1].data.field(19)[i]
     mcAztel = hdu_list[1].data.field(20)[i]
 
-    srcpos = Disp.calc_CamSourcePos(mcAlt,mcAz,mcAlttel,mcAztel,focal_length)
+    srcpos = Disp.calc_CamSourcePos([mcAlt],[mcAz],[mcAlttel],[mcAztel],focal_length)
     
     Source_X = srcpos[0]
     Source_Y = srcpos[1]
@@ -114,7 +114,7 @@ for i in range(0,nevents):
     mcAlttel = hdu_list[1].data.field(19)[i]
     mcAztel = hdu_list[1].data.field(20)[i]
 
-    srcpos = Disp.calc_CamSourcePos(mcAlt,mcAz,mcAlttel,mcAztel,focal_length)
+    srcpos = Disp.calc_CamSourcePos([mcAlt],[mcAz],[mcAlttel],[mcAztel],focal_length)
     
     Source_X = srcpos[0]
     Source_Y = srcpos[1]

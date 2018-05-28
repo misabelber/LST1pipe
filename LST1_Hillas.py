@@ -193,7 +193,7 @@ if __name__ == '__main__':
     output = {'camtype':camtype,'ObsID':ObsID,'EvID':EvID,'mcEnergy':mcEnergy,'mcAlt':mcAlt,'mcAz':mcAz, 'mcCore_x':mcCore_x,'mcCore_y':mcCore_y,'mcHfirst':mcHfirst,'mcType':mcType, 'GPStime':GPStime, 'width':width, 'length':length, 'phi':phi,'psi':psi,'r':r,'cen_x':cen_x,'cen_y':cen_y,'size':size,'mcAlttel':mcAlttel,'mcAztel':mcAztel}
     ntuple = Table(output)
     
-    if os.path.isfile('events.fits')==False :
+    if os.path.isfile('/scratch/bernardos/LST1/Events/events.fits')==False :
         #Convert Tables of data into HDUBinTables to write them into fits files
         
                 
@@ -210,13 +210,13 @@ if __name__ == '__main__':
         hdul = fits.HDUList([primary_hdu])
         hdul.append(fits.BinTableHDU(data=pardata,header=parheader))
         hdul.append(pixels)
-        hdul.writeto("events.fits")
+        hdul.writeto("/scratch/bernardos/LST1/Events/events.fits")
     else:
-        #Iºf this is not the first data set, we must append the new data to the existing HDUBinTables and ImageHDU contained in the events.fits file.
-        hdul=fits.open("events.fits") #Open the existing file which contains two tables and 1 image
+        #Iºf this is not the first data set, we must append the new data to the existing HDUBinTables and ImageHDU contained in the /scratch/bernardos/LST1/Events/events.fits file.
+        hdul=fits.open("/scratch/bernardos/LST1/Events/events.fits") #Open the existing file which contains two tables and 1 image
         #Get the already existing data:
         primary_hdu = hdul[0]
-        data = Table.read("events.fits",1)
+        data = Table.read("/scratch/bernardos/LST1/Events/events.fits",1)
         pixdata = hdul[2].data
         
         #Concatenate data
@@ -235,7 +235,7 @@ if __name__ == '__main__':
         hdul.append(fits.BinTableHDU(data=pardata,header=parheader))
         hdul.append(pixhdu)
         
-        hdul.writeto("events.fits",overwrite=True)
+        hdul.writeto("/scratch/bernardos/LST1/Events/events.fits",overwrite=True)
                 
         
 

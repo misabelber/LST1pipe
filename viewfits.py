@@ -2,7 +2,7 @@ from astropy.io import fits
 import matplotlib.pyplot as plt
 import numpy as np
 import math as m
-hdu_list = fits.open("events.fits")
+hdu_list = fits.open("/scratch/bernardos/LST1/Events/events.fits")
 hdu_list[1].data
 
 nevents = hdu_list[1].data.field(0).size
