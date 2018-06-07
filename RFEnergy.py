@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+'''
+Script for Energy reconstruction using Random Forest regressor
+'''
+
 from astropy.io import fits
 import scipy
 import numpy as np
@@ -30,7 +35,7 @@ energy = np.log10(data.field('mcEnergy')*1e3) #Log of energy in GeV
 cen_x = data.field('cen_x')
 cen_y = data.field('cen_y')
 psi = data.field('psi')
-dist = np.sqrt(cen_x*cen_x + cen_y*cen_y) 
+r = data.field('r')
 
 mcAlt = data.field('mcAlt')
 mcAz = data.field('mcAz')
@@ -40,7 +45,7 @@ mcAztel = data.field('mcAztel')
 sourcepos = Disp.calc_CamSourcePos(mcAlt,mcAz,mcAlttel,mcAztel,focal_length)
 disp = Disp.calc_DISP(sourcepos[0],sourcepos[1],cen_x,cen_y)
 
-X_e = np.array([size,dist,width,length,width/length,psi,phi]).T
+X_e = np.array([size,r,width,length,width/length,psi,phi]).T
 X_etrain, X_etest, E_train, E_test = train_test_split(X_e, energy,
                                                     train_size=int(2*nevents/3),
                                                       random_state=4)

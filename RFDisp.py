@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+'''
+Script for DISP reconstruction using Random Forest regressor
+'''
+
 from astropy.io import fits 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -31,7 +36,7 @@ energy = np.log10(data.field('mcEnergy')*1e3) #Log of energy in GeV
 cen_x = data.field('cen_x')
 cen_y = data.field('cen_y')
 psi = data.field('psi')
-dist = np.sqrt(cen_x*cen_x + cen_y*cen_y) 
+r = data.field('r')
 
 mcAlt = data.field('mcAlt')
 mcAz = data.field('mcAz')

@@ -1,3 +1,12 @@
+#!/usr/bin/env python3
+'''
+Module for calculating Source position in camera coordinates, and Disp distance.
+Usage:
+
+import Disp
+
+'''
+
 import numpy as np
 import ctapipe.coordinates as c
 import astropy.units as u

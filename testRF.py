@@ -79,7 +79,6 @@ plt.colorbar(hD[3],ax=aax)
 figD.show()
 
 
-
 '''
 rng = np.random.RandomState(1)
 X = np.array([(np.sort(200 * rng.rand(600, 1) - 100,axis=0)).ravel(),(np.sort(200 * rng.rand(600, 1) - 100,axis=0)).ravel()])

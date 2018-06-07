@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+'''
+Script for plotting cleaned LST1 images with source position in camera coordinates
+'''
+
 import sys
 from astropy.io import fits
 import matplotlib.pylab as plt
@@ -65,6 +70,5 @@ for i in range(0,nevents):
     plt.plot([Source_X],[Source_Y],marker='o',markersize=10,color="green")
     plt.plot([cen_x],[cen_y],marker='x',markersize=10,color="blue")
     plt.plot([Source_X,cen_x],[Source_Y,cen_y],'-',color="red")
-    print(size,mcAlttel,mcAztel,mcAlt,mcAz)
     plt.show()
     

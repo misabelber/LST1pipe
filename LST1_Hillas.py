@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 
 """
-Example of Hillas parameters calculation from simtelarray file, and writing out ntuple as and astropy table
+Hillas parameters calculation of LST1 events from a simtelarray file.
+Result is stored in a fits file. 
+Running this script for several simtelarray files will concatenate events to the same fits file.
+
+USAGE: python LST1_Hillas.py 'Particle' 'Simtelarray file' 'Store Img(true or false)' 
+
 """
 
 import matplotlib.pylab as plt
@@ -21,12 +26,20 @@ from astropy.visualization import quantity_support
 from astropy.table import vstack,Table
 from astropy.io import fits
 
-
-class EventContainer(Container):
-    event = Field(Map(),"Event")
-
-
 if __name__ == '__main__':
+    
+    #Some configuration variables
+    ########################################################
+    DATA_PATH="/home/queenmab/DATA/LST1/" # Path where Simtelarray files are stored
+    TYPE=sys.argv[1] #Gamma, Proton, Electron (This are subfolders where simtelarray files of different type are stored)
+    filename = sys.argv[2] #Name of the simtelarray file
+
+    storeimg = sys.argv[3] #True for storing pixel information
+    
+    outfile = "/home/queenmab/DATA/LST1/Events/test.fits" #File where DL2 data will be stored 
+    #######################################################
+    
+    #Cleaning levels:
 
     level1 = {'LSTCam' : 6.}
     level2 = level1.copy()
@@ -34,16 +47,11 @@ if __name__ == '__main__':
     for key in level2:
         level2[key] *= 0.5
     print(level2)
-
-    DATA_PATH="/scratch/bernardos/LST1/"
-    TYPE=sys.argv[1]
-    filename = sys.argv[2]
-
-    #source01 = EventSourceFactory.produce(input_url="/scratch/bernardos/LST1/gamma_20deg_180deg_run2200___cta-prod3-demo-2147m-LaPalma-demo3-FC_cone8.simtel.gz",allowed_tels={1});
-#    source01 = EventSourceFactory.produce(input_url="/scratch/bernardos/LST1/gamma_20deg_180deg_run2201___cta-prod3-demo-2147m-LaPalma-demo3-FC_cone8.simtel.gz",allowed_tels={1});
-    #source = EventSourceFactory.produce(input_url=DATA_PATH+"gamma_20deg_180deg_run2202___cta-prod3-demo-2147m-LaPalma-demo3-FC_cone8.simtel.gz",allowed_tels={1});
-    source = EventSourceFactory.produce(input_url=DATA_PATH+TYPE+"/"+filename,allowed_tels={1})
+    
+    source = EventSourceFactory.produce(input_url=DATA_PATH+TYPE+"/"+filename,allowed_tels={1}) #Open Simtelarray file 
     camtype = []   # one entry per image
+
+    #Hillas Parameters
     width = np.array([])
     length = np.array([])
     phi = np.array([])
@@ -74,34 +82,18 @@ if __name__ == '__main__':
     log10pixelHGsignal = {}
     survived = {}
 
-    
 
-    ev = EventContainer()
-
-    n=0;
-    for event in source:
-        ev.event[n] = ctapipe.io.containers.DataContainer()
-        ev.event[n] = copy.deepcopy(event)
-        n=n+1
-    '''''
-    for event in source02:
-        ev.event[n] = ctapipe.io.containers.DataContainer()
-        ev.event[n] = copy.deepcopy(event)
-        n=n+1
-    '''''
     for key in level1:
 
         log10pixelHGsignal[key] = []
         survived[key] = []
     i=0
-    for i in range(0,n-1):
-        event = ev.event[i]
-        
+    for event in source:      
         if i%100==0:
             print("EVENT_ID: ", event.r0.event_id, "TELS: ",
                   event.r0.tels_with_data,
                   "MC Energy:", event.mc.energy )
-
+        i=i+1
         ntels = len(event.r0.tels_with_data)
 
         '''
@@ -110,13 +102,8 @@ if __name__ == '__main__':
         '''
         for ii, tel_id in enumerate(event.r0.tels_with_data):
             
-            geom = event.inst.subarray.tel[tel_id].camera
-
-            if str(geom) == 'FlashCam':  # FlashCam now skipped because of no proper pulse extraction
-                continue
-            elif str(geom) == 'ASTRI':   # excluded because no proper simulation in Prod3
-                continue
-            
+            geom = event.inst.subarray.tel[tel_id].camera #Camera geometry
+                        
             data = event.r0.tel[tel_id].waveform
             ped = event.mc.tel[tel_id].pedestal
             # the pedestal is the average (for pedestal events) of the *sum* of all samples, from sim_telarray
@@ -145,9 +132,7 @@ if __name__ == '__main__':
             clean[~cleanmask] = 0.0   # set to 0 pixels which did not survive cleaning
             if np.max(clean) < 1.e-6: # skip images with no pixels
                 continue
-
-
-
+            
             # Calculate image parameters
             hillas = hillas_parameters(geom, clean) # this one gives some warnings invalid value in sqrt            
             foclen = event.inst.subarray.tel[tel_id].optics.equivalent_focal_length
@@ -159,7 +144,7 @@ if __name__ == '__main__':
                 if fitsdata.size == 0:
                     fitsdata = clean
                 else:
-                    fitsdata = np.vstack([fitsdata,clean])
+                    fitsdata = np.vstack([fitsdata,clean]) #Pixel content
 
                 camtype.append(str(geom))
                 width = np.append(width, w.value)
@@ -188,20 +173,19 @@ if __name__ == '__main__':
                 
                 GPStime = np.append(GPStime,event.trig.gps_time.value)
 
-    #print(np.shape(camtype),np.shape(ObsID),np.shape(EvID),np.shape(mcEnergy),np.shape(mcAlt),np.shape(mcAz),np.shape(mcCore_x),np.shape(mcCore_y),np.shape(mcHfirst),np.shape(mcType),np.shape(width),np.shape(length),np.shape(size))
-
+    #Store the output in an ntuple:
+                
     output = {'camtype':camtype,'ObsID':ObsID,'EvID':EvID,'mcEnergy':mcEnergy,'mcAlt':mcAlt,'mcAz':mcAz, 'mcCore_x':mcCore_x,'mcCore_y':mcCore_y,'mcHfirst':mcHfirst,'mcType':mcType, 'GPStime':GPStime, 'width':width, 'length':length, 'phi':phi,'psi':psi,'r':r,'cen_x':cen_x,'cen_y':cen_y,'size':size,'mcAlttel':mcAlttel,'mcAztel':mcAztel}
     ntuple = Table(output)
-    
-    if os.path.isfile('/scratch/bernardos/LST1/Events/events.fits')==False :
+
+    #If destination fitsfile doesn't exist, will create a new one with proper headers 
+    if os.path.isfile(outfile)==False :
         #Convert Tables of data into HDUBinTables to write them into fits files
-        
-                
         pardata = ntuple.as_array()
         parheader = fits.Header()
         parheader.update(ntuple.meta)
         
-        pixels = fits.ImageHDU(fitsdata)
+        pixels = fits.ImageHDU(fitsdata) #Image with pixel content
 
         #Write the data in an HDUList for storing in a fitsfile
         hdr = fits.Header() #Example header, we can add more things to this header
@@ -209,14 +193,15 @@ if __name__ == '__main__':
         primary_hdu = fits.PrimaryHDU(header=hdr)
         hdul = fits.HDUList([primary_hdu])
         hdul.append(fits.BinTableHDU(data=pardata,header=parheader))
-        hdul.append(pixels)
-        hdul.writeto("/scratch/bernardos/LST1/Events/events.fits")
+        if storeimg: hdul.append(pixels) 
+        hdul.writeto(outfile)
+    #If the destination fits file exists, will concatenate events:
     else:
-        #Iºf this is not the first data set, we must append the new data to the existing HDUBinTables and ImageHDU contained in the /scratch/bernardos/LST1/Events/events.fits file.
-        hdul=fits.open("/scratch/bernardos/LST1/Events/events.fits") #Open the existing file which contains two tables and 1 image
+        #If this is not the first data set, we must append the new data to the existing HDUBinTables and ImageHDU contained in the events.fits file.
+        hdul=fits.open(outfile) #Open the existing file which contains two tables and 1 image
         #Get the already existing data:
         primary_hdu = hdul[0]
-        data = Table.read("/scratch/bernardos/LST1/Events/events.fits",1)
+        data = Table.read(outfile,1)
         pixdata = hdul[2].data
         
         #Concatenate data
@@ -235,7 +220,7 @@ if __name__ == '__main__':
         hdul.append(fits.BinTableHDU(data=pardata,header=parheader))
         hdul.append(pixhdu)
         
-        hdul.writeto("/scratch/bernardos/LST1/Events/events.fits",overwrite=True)
+        hdul.writeto(outfile,overwrite=True)
                 
         
 
