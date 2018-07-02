@@ -2,7 +2,7 @@
 
 HERE=`pwd`
 
-PARTICLE='Gamma'
+PARTICLE='Proton'
 
 DATA_PATH='/home/queenmab/DATA/LST1/'$PARTICLE
 

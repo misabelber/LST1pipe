@@ -21,9 +21,9 @@ from astropy.io import fits
 class EventContainer(Container):
     event = Field(Map(),"Event")
 
-DATA_PATH="/scratch/bernardos/LST1/Gamma/"
+DATA_PATH="/home/queenmab/DATA/LST1/Gamma/"
 
-source = EventSourceFactory.produce(input_url=DATA_PATH+"gamma_20deg_180deg_run2202___cta-prod3-demo-2147m-LaPalma-demo3-FC_cone8.simtel.gz",allowed_tels={1});
+source = EventSourceFactory.produce(input_url=DATA_PATH+"gamma_20deg_180deg_run2290___cta-prod3-demo-2147m-LaPalma-demo3-FC_cone8.simtel.gz",allowed_tels={1});
 
 ev = EventContainer()
 
